@@ -36,7 +36,7 @@ env:
   # other workflows.
   REPO_NAME: immortalwrt-mt798x
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x.git
-  REPO_BRANCH: dev
+  REPO_BRANCH: openwrt-21.02
   BUILD_DEPENDS:  "ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 \
                    ccache clang cmake cpio curl device-tree-compiler fastjar file flex gawk gettext gcc-multilib \
                    g++ g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev \
@@ -164,7 +164,7 @@ jobs:
           cd openwrt
           cp -f files/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
           cp -f files/mwan3 feeds/packages/net/mwan3
-          git apply �whitespace files/h-add-sl3000.diff
+          git apply –whitespace files/h-add-sl3000.diff
  
       - name: SSH connection to Actions
         uses: P3TERX/ssh2actions@main
@@ -246,9 +246,9 @@ jobs:
           echo "Build from $REPO_URL $REPO_BRANCH" >> release.txt
           [ $COWTRANSFER_FIRMWARE = true -o $WETRANSFER_FIRMWARE = true ] && echo 'Products transfer:' >> release.txt
           [ $COWTRANSFER_FIRMWARE = true ] && echo \
-            "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+            "ðŸ”— [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
           [ $WETRANSFER_FIRMWARE = true ] && echo \
-            "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
+            "ðŸ”— [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: Upload firmware to release
