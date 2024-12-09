@@ -1,0 +1,681 @@
+ defconfig/mt7981-ax3000.config                     |   4 +
+ package/boot/uboot-envtools/files/mediatek         |   2 +
+ package/mtk/applications/mtk-smp/files/smp.sh      |   1 +
+ .../boot/dts/mediatek/mt7981-sl-3000-emmc.dts      | 266 +++++++++++++++++++++
+ .../arm64/boot/dts/mediatek/mt7981-sl-3000.dts     | 228 ++++++++++++++++++
+ target/linux/mediatek/image/mt7981.mk              |  29 +++
+ .../mt7981/base-files/etc/board.d/02_network       |  11 +
+ .../base-files/lib/preinit/90_extract_caldata      |   1 +
+ .../mt7981/base-files/lib/upgrade/platform.sh      |   3 +
+ 9 files changed, 545 insertions(+)
+
+diff --git a/defconfig/mt7981-ax3000.config b/defconfig/mt7981-ax3000.config
+index f23812f..3f272b3 100644
+--- a/defconfig/mt7981-ax3000.config
++++ b/defconfig/mt7981-ax3000.config
+@@ -7,6 +7,10 @@ CONFIG_TARGET_DEVICE_mediatek_mt7981_DEVICE_cetron_ct3003=y
+ CONFIG_TARGET_DEVICE_PACKAGES_mediatek_mt7981_DEVICE_cetron_ct3003=""
+ CONFIG_TARGET_DEVICE_mediatek_mt7981_DEVICE_cmcc_a10=y
+ CONFIG_TARGET_DEVICE_PACKAGES_mediatek_mt7981_DEVICE_cmcc_a10=""
++CONFIG_TARGET_DEVICE_mediatek_mt7981_DEVICE_sl_3000-emmc=y
++CONFIG_TARGET_DEVICE_PACKAGES_mediatek_mt7981_DEVICE_sl_3000-emmc=""
++CONFIG_TARGET_DEVICE_mediatek_mt7981_DEVICE_sl_3000=y
++CONFIG_TARGET_DEVICE_PACKAGES_mediatek_mt7981_DEVICE_sl_3000=""
+ CONFIG_TARGET_DEVICE_mediatek_mt7981_DEVICE_cmcc_rax3000m-emmc=y
+ CONFIG_TARGET_DEVICE_PACKAGES_mediatek_mt7981_DEVICE_cmcc_rax3000m-emmc=""
+ CONFIG_TARGET_DEVICE_mediatek_mt7981_DEVICE_cmcc_rax3000m=y
+diff --git a/package/boot/uboot-envtools/files/mediatek b/package/boot/uboot-envtools/files/mediatek
+index bcd710a..86ad844 100644
+--- a/package/boot/uboot-envtools/files/mediatek
++++ b/package/boot/uboot-envtools/files/mediatek
+@@ -15,6 +15,7 @@ board=$(board_name)
+ case "$board" in
+ cmcc,rax3000m-emmc |\
+ cmcc,xr30-emmc |\
++sl,3000-emmc |\
+ glinet,gl-mt6000 |\
+ jdcloud,re-cp-03)
+ 	env_dev=$(find_mmc_part "u-boot-env")
+@@ -30,6 +31,7 @@ livinet,zr-3020*)
+ h3c,nx30pro |\
+ *clt,r30b1* |\
+ ruijie,rg-x60-pro* |\
++sl,3000 |\
+ cmcc,xr30 |\
+ cmcc,rax3000m)
+ 	ubootenv_add_uci_config "/dev/mtd2" "0x0" "0x80000" "0x20000" "4"
+diff --git a/package/mtk/applications/mtk-smp/files/smp.sh b/package/mtk/applications/mtk-smp/files/smp.sh
+index 5607688..8fccf67 100755
+--- a/package/mtk/applications/mtk-smp/files/smp.sh
++++ b/package/mtk/applications/mtk-smp/files/smp.sh
+@@ -755,6 +755,7 @@ setup_model()
+ 	cmcc,a10* |\
+ 	xiaomi,mi-router-wr30u* |\
+ 	xiaomi,mi-router-ax3000t* |\
++	sl,3000* |\
+ 	*rax3000m* |\
+ 	*cmcc,xr30* |\
+ 	h3c,nx30pro |\
+diff --git a/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-sl-3000-emmc.dts b/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-sl-3000-emmc.dts
+new file mode 100644
+index 0000000..17f8857
+--- /dev/null
++++ b/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-sl-3000-emmc.dts
+@@ -0,0 +1,266 @@
++/dts-v1/;
++#include "mt7981.dtsi"
++
++/ {
++	model = "SL-3000 eMMC";
++	compatible = "sl,3000-emmc", "mediatek,mt7981";
++
++	chosen {
++		bootargs = "console=ttyS0,115200n1 loglevel=8 \
++			    earlycon=uart8250,mmio32,0x11002000 \
++			    root=PARTLABEL=rootfs rootwait rootfstype=squashfs,f2fs";
++	};
++
++	aliases {
++		led-boot = &status_red_led;
++		led-failsafe = &status_red_led;
++		led-running = &status_green_led;
++		led-upgrade = &status_blue_led;
++	};
++
++	memory {
++		reg = <0 0x40000000 0 0x20000000>;
++	};
++
++        leds {
++                compatible = "gpio-leds";
++
++                status_red_led: led-0 {
++                        label = "red:status";
++                        gpios = <&pio 10 GPIO_ACTIVE_LOW>;
++                };
++
++                status_green_led: led-1 {
++                        label = "green:status";
++                        gpios = <&pio 11 GPIO_ACTIVE_LOW>;
++                };
++
++                status_blue_led: led-2 {
++                        label = "blue:status";
++                        gpios = <&pio 12 GPIO_ACTIVE_LOW>;
++		};
++	};
++
++	gpio-keys {
++		compatible = "gpio-keys";
++		reset {
++			label = "reset";
++			linux,code = <KEY_RESTART>;
++			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
++		};
++
++		mesh {
++			label = "mesh";
++			gpios = <&pio 0 GPIO_ACTIVE_LOW>;
++			linux,code = <BTN_9>;
++			linux,input-type = <EV_SW>;
++		};
++	};
++
++	gsw: gsw@0 {
++		compatible = "mediatek,mt753x";
++		mediatek,ethsys = <&ethsys>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
++};
++
++&uart0 {
++	status = "okay";
++};
++
++&watchdog {
++	status = "okay";
++};
++
++&eth {
++	status = "okay";
++
++	gmac0: mac@0 {
++		compatible = "mediatek,eth-mac";
++		reg = <0>;
++		phy-mode = "2500base-x";
++
++		fixed-link {
++			speed = <2500>;
++			full-duplex;
++			pause;
++		};
++	};
++
++	gmac1: mac@1 {
++		compatible = "mediatek,eth-mac";
++		reg = <1>;
++		phy-mode = "gmii";
++		phy-handle = <&phy0>;
++	};
++
++	mdio: mdio-bus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		phy0: ethernet-phy@0 {
++			compatible = "ethernet-phy-id03a2.9461";
++			reg = <0>;
++			phy-mode = "gmii";
++			nvmem-cells = <&phy_calibration>;
++			nvmem-cell-names = "phy-cal-data";
++		};
++	};
++};
++
++&gsw {
++	mediatek,mdio = <&mdio>;
++	mediatek,mdio_master_pinmux = <0>;
++	reset-gpios = <&pio 39 0>;
++	interrupt-parent = <&pio>;
++	interrupts = <38 IRQ_TYPE_LEVEL_HIGH>;
++	status = "okay";
++
++	port6: port@6 {
++		compatible = "mediatek,mt753x-port";
++		mediatek,ssc-on;
++		reg = <6>;
++		phy-mode = "sgmii";
++
++		fixed-link {
++			speed = <2500>;
++			full-duplex;
++		};
++	};
++};
++
++&hnat {
++	mtketh-wan = "eth1";
++	mtketh-lan = "eth0";
++	mtketh-max-gmac = <2>;
++	ext-devices-prefix = "usb", "wwan";
++	status = "okay";
++};
++
++&xhci {
++	mediatek,u3p-dis-msk = <0x0>;
++	phys = <&u2port0 PHY_TYPE_USB2>,
++		   <&u3port0 PHY_TYPE_USB3>;
++	status = "okay";
++};
++&spi2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&spi2_flash_pins>;
++	status = "okay";
++
++	spi_nor@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "jedec,spi-nor";
++		spi-cal-enable;
++		spi-cal-mode = "read-data";
++		spi-cal-datalen = <7>;
++		spi-cal-data = /bits/ 8 <0x53 0x46 0x5F 0x42 0x4F 0x4F 0x54>; /* SF_BOOT */
++		spi-cal-addrlen = <1>;
++		spi-cal-addr = /bits/ 32 <0x0>;
++		reg = <0>;
++		spi-max-frequency = <52000000>;
++		spi-tx-buswidth = <4>;
++		spi-rx-buswidth = <4>;
++
++			partitions {
++				compatible = "fixed-partitions";
++				#address-cells = <0x01>;
++				#size-cells = <0x01>;
++
++				partition@00000 {
++					label = "BL2";
++					reg = <0x00 0x100000>;
++				};
++
++				partition@100000 {
++					label = "u-boot-env";
++					reg = <0x100000 0x80000>;
++				};
++
++				partition@180000 {
++					label = "Factory";
++					reg = <0x180000 0x200000>;
++				};
++
++				partition@380000 {
++					label = "FIP";
++					reg = <0x380000 0x200000>;
++				};
++
++				partition@580000 {
++					label = "stock-firmware";
++					reg = <0x580000 0x1900000>;
++				};
++
++				partition@1e80000 {
++					label = "Product";
++					reg = <0x1e80000 0x20000>;
++				};
++
++				partition@1ea0000 {
++					label = "Custom";
++					reg = <0x1ea0000 0x160000>;
++				};
++			};
++		};
++};
++
++
++&mmc0 {
++	bus-width = <8>;
++	cap-mmc-highspeed;
++	max-frequency = <52000000>;
++	no-sd;
++	no-sdio;
++	non-removable;
++	pinctrl-names = "default", "state_uhs";
++	pinctrl-0 = <&mmc0_pins_default>;
++	pinctrl-1 = <&mmc0_pins_uhs>;
++	vmmc-supply = <&reg_3p3v>;
++	non-removable;
++	status = "okay";
++};
++
++&pio {
++	spi1_flash_pins: spi1-pins {
++			mux {
++				function = "spi";
++				groups = "spi1_1";
++		};
++	};
++		
++	spi2_flash_pins: spi2-pins {
++		mux {
++			function = "spi";
++			groups = "spi2", "spi2_wp_hold";
++		};
++
++		conf-pu {
++			pins = "SPI2_CS", "SPI2_HOLD", "SPI2_WP";
++			drive-strength = <MTK_DRIVE_8mA>;
++			bias-pull-up = <MTK_PUPD_SET_R1R0_11>;
++		};
++
++		conf-pd {
++			pins = "SPI2_CLK", "SPI2_MOSI", "SPI2_MISO";
++			drive-strength = <MTK_DRIVE_8mA>;
++			bias-pull-down = <MTK_PUPD_SET_R1R0_11>;
++		};
++	};
++
++	mmc0_pins_default: mmc0-pins-default {
++		mux {
++			function = "flash";
++			groups = "emmc_45";
++		};
++	};
++
++	mmc0_pins_uhs: mmc0-pins-uhs {
++		mux {
++			function = "flash";
++			groups = "emmc_45";
++		};
++	};
++};
+diff --git a/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-sl-3000.dts b/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-sl-3000.dts
+new file mode 100644
+index 0000000..98db141
+--- /dev/null
++++ b/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-sl-3000.dts
+@@ -0,0 +1,228 @@
++/dts-v1/;
++#include "mt7981.dtsi"
++
++/ {
++	model = "SL-3000 (Tenbay WR3000K)";
++	compatible = "sl,3000", "mediatek,mt7981";
++
++	chosen {
++		bootargs = "console=ttyS0,115200n1 loglevel=8 \
++			    earlycon=uart8250,mmio32,0x11002000";
++	};
++
++	aliases {
++		led-boot = &status_red_led;
++		led-failsafe = &status_red_led;
++		led-running = &status_green_led;
++		led-upgrade = &status_blue_led;
++	};
++
++	memory {
++		reg = <0 0x40000000 0 0x20000000>;
++	};
++
++        leds {
++                compatible = "gpio-leds";
++
++                status_red_led: led-0 {
++                        label = "red:status";
++                        gpios = <&pio 10 GPIO_ACTIVE_LOW>;
++                };
++
++                status_green_led: led-1 {
++                        label = "green:status";
++                        gpios = <&pio 11 GPIO_ACTIVE_LOW>;
++                };
++
++                status_blue_led: led-2 {
++                        label = "blue:status";
++                        gpios = <&pio 12 GPIO_ACTIVE_LOW>;
++		};
++	};
++
++	gpio-keys {
++		compatible = "gpio-keys";
++		reset {
++			label = "reset";
++			linux,code = <KEY_RESTART>;
++			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
++		};
++
++		mesh {
++			label = "mesh";
++			gpios = <&pio 0 GPIO_ACTIVE_LOW>;
++			linux,code = <BTN_9>;
++			linux,input-type = <EV_SW>;
++		};
++	};
++
++	gsw: gsw@0 {
++		compatible = "mediatek,mt753x";
++		mediatek,ethsys = <&ethsys>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
++	
++	nmbm_spim_nand {
++		compatible = "generic,nmbm";
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		lower-mtd-device = <&spi_nand>;
++		forced-create;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			partition@0 {
++				label = "BL2";
++				reg = <0x0 0x100000>;
++			};
++
++			partition@100000 {
++				label = "u-boot-env";
++				reg = <0x100000 0x80000>;
++			};
++
++			partition@180000 {
++				label = "Factory";
++				reg = <0x180000 0x200000>;
++			};
++
++			partition@380000 {
++				label = "FIP";
++				reg = <0x380000 0x200000>;
++			};
++
++			partition@580000 {
++				label = "ubi";
++				reg = <0x580000 0x7200000>;
++			};
++		};
++	};
++};
++
++&uart0 {
++	status = "okay";
++};
++
++&watchdog {
++	status = "okay";
++};
++
++&eth {
++	status = "okay";
++
++	gmac0: mac@0 {
++		compatible = "mediatek,eth-mac";
++		reg = <0>;
++		phy-mode = "2500base-x";
++
++		fixed-link {
++			speed = <2500>;
++			full-duplex;
++			pause;
++		};
++	};
++
++	gmac1: mac@1 {
++		compatible = "mediatek,eth-mac";
++		reg = <1>;
++		phy-mode = "gmii";
++		phy-handle = <&phy0>;
++	};
++
++	mdio: mdio-bus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		phy0: ethernet-phy@0 {
++			compatible = "ethernet-phy-id03a2.9461";
++			reg = <0>;
++			phy-mode = "gmii";
++			nvmem-cells = <&phy_calibration>;
++			nvmem-cell-names = "phy-cal-data";
++		};
++	};
++};
++
++&gsw {
++	mediatek,mdio = <&mdio>;
++	mediatek,mdio_master_pinmux = <0>;
++	reset-gpios = <&pio 39 0>;
++	interrupt-parent = <&pio>;
++	interrupts = <38 IRQ_TYPE_LEVEL_HIGH>;
++	status = "okay";
++
++	port6: port@6 {
++		compatible = "mediatek,mt753x-port";
++		mediatek,ssc-on;
++		reg = <6>;
++		phy-mode = "sgmii";
++
++		fixed-link {
++			speed = <2500>;
++			full-duplex;
++		};
++	};
++};
++
++&hnat {
++	mtketh-wan = "eth1";
++	mtketh-lan = "eth0";
++	mtketh-max-gmac = <2>;
++	ext-devices-prefix = "usb", "wwan";
++	status = "okay";
++};
++
++&xhci {
++	mediatek,u3p-dis-msk = <0x0>;
++	phys = <&u2port0 PHY_TYPE_USB2>,
++		   <&u3port0 PHY_TYPE_USB3>;
++	status = "okay";
++};
++
++&spi0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&spi0_flash_pins>;
++	status = "okay";
++
++	spi_nand: spi_nand@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "spi-nand";
++		reg = <0>;
++		spi-max-frequency = <52000000>;
++		spi-tx-bus-width = <4>;
++		spi-rx-bus-width = <4>;
++		spi-cal-enable;
++		spi-cal-mode = "read-data";
++		spi-cal-datalen = <7>;
++		spi-cal-data = /bits/ 8 <0x53 0x50 0x49 0x4E 0x41 0x4E 0x44>; /* 'SPINAND' */
++		spi-cal-addrlen = <5>;
++		spi-cal-addr = /bits/ 32 <0x0 0x0 0x0 0x0 0x0>;
++	};
++};
++
++&pio {
++	spi0_flash_pins: spi0-pins {
++		mux {
++			function = "spi";
++			groups = "spi0", "spi0_wp_hold";
++		};
++
++		conf-pu {
++			pins = "SPI0_CS", "SPI0_HOLD", "SPI0_WP";
++			drive-strength = <MTK_DRIVE_8mA>;
++			bias-pull-up = <MTK_PUPD_SET_R1R0_11>;
++		};
++
++		conf-pd {
++			pins = "SPI0_CLK", "SPI0_MOSI", "SPI0_MISO";
++			drive-strength = <MTK_DRIVE_8mA>;
++			bias-pull-down = <MTK_PUPD_SET_R1R0_11>;
++		};
++	};
++};
+\ No newline at end of file
+diff --git a/target/linux/mediatek/image/mt7981.mk b/target/linux/mediatek/image/mt7981.mk
+index 79dfe1f..b3bb8d8 100644
+--- a/target/linux/mediatek/image/mt7981.mk
++++ b/target/linux/mediatek/image/mt7981.mk
+@@ -641,6 +641,35 @@ define Device/cmcc_xr30-emmc
+ endef
+ TARGET_DEVICES += cmcc_xr30-emmc
+ 
++define Device/sl_3000
++  DEVICE_VENDOR := SL
++  DEVICE_MODEL := 3000 NAND
++  DEVICE_DTS := mt7981-sl-3000
++  DEVICE_DTS_DIR := $(DTS_DIR)/mediatek
++  SUPPORTED_DEVICES := sl,3000
++  UBINIZE_OPTS := -E 5
++  BLOCKSIZE := 128k
++  PAGESIZE := 2048
++  IMAGE_SIZE := 116736k
++  KERNEL_IN_UBI := 1
++  IMAGES += factory.bin
++  IMAGE/factory.bin := append-ubi | check-size $$$$(IMAGE_SIZE)
++  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
++endef
++TARGET_DEVICES += sl_3000
++
++define Device/sl_3000-emmc
++  DEVICE_VENDOR := SL
++  DEVICE_MODEL := 3000 eMMC
++  DEVICE_DTS := mt7981-sl-3000-emmc
++  DEVICE_DTS_DIR := $(DTS_DIR)/mediatek
++  SUPPORTED_DEVICES := sl,3000-emmc
++  DEVICE_PACKAGES := $(MT7981_USB_PKGS) f2fsck losetup mkf2fs kmod-fs-f2fs kmod-mmc \
++	luci-app-samba4 luci-i18n-samba4-zh-cn
++  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
++endef
++TARGET_DEVICES += sl_3000-emmc
++
+ define Device/h3c_nx30pro
+   DEVICE_VENDOR := H3C
+   DEVICE_MODEL := NX30PRO
+diff --git a/target/linux/mediatek/mt7981/base-files/etc/board.d/02_network b/target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+index ae85c00..f29bed2 100755
+--- a/target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
++++ b/target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+@@ -41,6 +41,11 @@ mediatek_setup_interfaces()
+ 		ucidef_add_switch "switch0" \
+ 			"0:lan" "1:lan" "2:lan" "3:wan" "6u@eth0" "5u@eth1"
+ 		;;
++	*sl,3000*)
++		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
++		ucidef_add_switch "switch0" \
++			"0:lan" "1:lan" "2:lan" "3:wan" "6t@eth0"
++		;;
+ 	*cetron,ct3003*)
+ 		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
+ 		ucidef_add_switch "switch0" \
+@@ -210,6 +215,11 @@ mediatek_setup_macs()
+ 		label_mac=$lan_mac
+ 		local wifi_mac="$(mtd_get_mac_binary $part_name 0x04)"
+ 		;;
++	sl,3000-emmc)
++		local wifi_mac=$(mmc_get_mac_binary factory 0x4)
++		lan_mac=$(macaddr_add $wifi_mac -1)
++		wan_mac=$(macaddr_add $wifi_mac -2)
++		;;
+ 	cmcc,xr30-emmc|\
+ 	cmcc,rax3000m-emmc)
+ 		lan_mac=$(mmc_get_mac_binary factory 0x2a)
+@@ -293,6 +303,7 @@ mediatek_setup_macs()
+ 			echo "MacAddress=$b1mac" >> ${b1dat}
+ 		fi
+ 		;;
++	sl,3000 |\
+ 	*newland,nl-wr8103*)
+ 		local wifi_mac=$(mtd_get_mac_binary Factory 0x4)
+ 		lan_mac=$(macaddr_add $wifi_mac -1)
+diff --git a/target/linux/mediatek/mt7981/base-files/lib/preinit/90_extract_caldata b/target/linux/mediatek/mt7981/base-files/lib/preinit/90_extract_caldata
+index bf0a180..2a62d09 100644
+--- a/target/linux/mediatek/mt7981/base-files/lib/preinit/90_extract_caldata
++++ b/target/linux/mediatek/mt7981/base-files/lib/preinit/90_extract_caldata
+@@ -16,6 +16,7 @@ caldata_validate() {
+ 
+ do_extract_caldata() {
+ 	case $(board_name) in
++	sl,3000-emmc |\
+ 	cmcc,xr30-emmc |\
+ 	cmcc,rax3000m-emmc)
+ 		FIRMWARE=MT7981_iPAiLNA_EEPROM.bin
+diff --git a/target/linux/mediatek/mt7981/base-files/lib/upgrade/platform.sh b/target/linux/mediatek/mt7981/base-files/lib/upgrade/platform.sh
+index 63a30d9..1cf3834 100644
+--- a/target/linux/mediatek/mt7981/base-files/lib/upgrade/platform.sh
++++ b/target/linux/mediatek/mt7981/base-files/lib/upgrade/platform.sh
+@@ -205,6 +205,7 @@ platform_do_upgrade() {
+ 	*jcg,q30* |\
+ 	nradio,wt9103 |\
+ 	cmcc,a10 |\
++	sl,3000 |\
+ 	cmcc,rax3000m |\
+ 	cmcc,xr30 |\
+ 	h3c,nx30pro |\
+@@ -217,6 +218,7 @@ platform_do_upgrade() {
+ 	*snand*)
+ 		nand_do_upgrade "$1"
+ 		;;
++	sl,3000-emmc |\
+ 	cmcc,rax3000m-emmc |\
+ 	cmcc,xr30-emmc |\
+ 	*emmc*)
+@@ -260,6 +262,7 @@ platform_check_image() {
+ 	*imou,lc-hx3001* |\
+ 	*jcg,q30* |\
+ 	cmcc,a10 |\
++	sl,3000* |\
+ 	cmcc,rax3000m* |\
+ 	cmcc,xr30* |\
+ 	h3c,nx30pro |\

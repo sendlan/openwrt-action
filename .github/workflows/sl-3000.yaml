@@ -13,7 +13,7 @@
 #-------------------------------------------------------------------------------------------------------
 
 # Workflow name which is showed in GitHub Actions.
-name: Build openwrt-firmware for sl-3000
+name: Build firmware sl-3000
 
 on:
   workflow_dispatch:
@@ -35,7 +35,7 @@ env:
   # You can modify the REPO_NAME to any name you want, but remember not to let it have the same name in 
   # other workflows.
   REPO_NAME: immortalwrt-mt798x
-  REPO_URL: https://github.com/zfgeng/immortalwrt-mt798x.git
+  REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x.git
   REPO_BRANCH: dev
   BUILD_DEPENDS:  "ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 \
                    ccache clang cmake cpio curl device-tree-compiler fastjar file flex gawk gettext gcc-multilib \
@@ -162,8 +162,10 @@ jobs:
       - name: Mod wifi Txpower and Fix wireless mac
         run: |
           cd openwrt
-          cp $GITHUB_WORKSPACE/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
-
+          cp -f files/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
+          cp -f files/mwan3 feeds/packages/net/mwan3
+          git apply –whitespace files/h-add-sl3000.diff
+ 
       - name: SSH connection to Actions
         uses: P3TERX/ssh2actions@main
         if: github.event.inputs.ssh == 'true' || contains(github.event.action, 'ssh')
@@ -185,7 +187,7 @@ jobs:
         run: |
           cd openwrt/
           echo -e "$(nproc) thread compile"
-          make -j$(nproc) || make -j1 || make -j1 V=s
+          make -j$(nproc) || make -j4 || make -j4 V=s
           echo "status=success" >> $GITHUB_OUTPUT
           grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
           [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
