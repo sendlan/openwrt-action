@@ -35,7 +35,7 @@ env:
   # You can modify the REPO_NAME to any name you want, but remember not to let it have the same name in 
   # other workflows.
   REPO_NAME: immortalwrt-mt798x
-  REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x.git
+  REPO_URL: https://github.com/dailook/immortalwrt-mt798x.git
   REPO_BRANCH: openwrt-21.02
   BUILD_DEPENDS:  "ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 \
                    ccache clang cmake cpio curl device-tree-compiler fastjar file flex gawk gettext gcc-multilib \
@@ -163,8 +163,7 @@ jobs:
         run: |
           cd openwrt
           cp -f files/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
-          cp -fr files/mwan3 feeds/packages/net/mwan3
-          git apply –whitespace files/h-add-sl3000.diff
+          yes | cp -rf files/mwan3/* feeds/packages/net/mwan3
  
       - name: SSH connection to Actions
         uses: P3TERX/ssh2actions@main
