@@ -163,7 +163,7 @@ jobs:
         run: |
           cd openwrt
           cp -f files/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
-          cp -f files/mwan3 feeds/packages/net/mwan3
+          cp -fr files/mwan3 feeds/packages/net/mwan3
           git apply –whitespace files/h-add-sl3000.diff
  
       - name: SSH connection to Actions
