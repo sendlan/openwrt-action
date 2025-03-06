@@ -35,7 +35,7 @@ env:
   # You can modify the REPO_NAME to any name you want, but remember not to let it have the same name in 
   # other workflows.
   REPO_NAME: immortalwrt-mt798x
-  REPO_URL: https://github.com/sendlan/immortalwrt-mt798x-24.10.git
+  REPO_URL: https://github.com/Zfgeng/immortalwrt-mt798x-24.10.git
   REPO_BRANCH: dev
   BUILD_DEPENDS:  "ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
   bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
