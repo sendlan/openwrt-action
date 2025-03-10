@@ -37,3 +37,5 @@ mkdir -p package/atree
 git clone https://github.com/xiaorouji/openwrt-passwall-packages.git package/atree
 git clone https://github.com/xiaorouji/openwrt-passwall2.git package/atree/openwrt-passwall2
 
+##-----------------Fix libxcrypt error-----------------
+ sed -i 's/PKG_INSTALL:=1/& PKG_FORTIFY_SOURCE=0\n/g' feeds/packages/libs/libxcrypt/Makefile
