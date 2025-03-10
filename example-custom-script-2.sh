@@ -26,5 +26,14 @@ chmod +x /tmp/clash >/dev/null 2>&1
 mkdir -p feeds/luci/applications/luci-app-openclash/root/etc/openclash/core
 mv /tmp/clash feeds/luci/applications/luci-app-openclash/root/etc/openclash/core/clash_meta >/dev/null 2>&1
 rm -rf /tmp/clash.tar.gz >/dev/null 2>&1
-##-----------------Delete DDNS's examples-----------------
-#sed -i '/myddns_ipv4/,$d' feeds/packages/net/ddns-scripts/files/etc/config/ddns
+##-----------------Fix Uboot-envtool-----------------
+sed -i 's/_$(SUBTARGET)/_filogic/g' package/boot/uboot-envtools/Makefile
+
+##-----------------Fix mtwifi-cfq 5g channel-----------------
+sed -i 's/channel="36"/channel="auto"/g' package/mtk/applications/mtwifi-cfg/files/mtwifi.sh
+
+##-----------------Add passwall-----------------
+mkdir -p package/atree
+git clone https://github.com/xiaorouji/openwrt-passwall-packages.git package/atree
+git clone https://github.com/xiaorouji/openwrt-passwall2.git package/atree/openwrt-passwall2
+
