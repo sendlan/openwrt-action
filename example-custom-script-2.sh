@@ -17,7 +17,7 @@
 #EOF
 #git apply example.patch
 #修改immortalwrt.lan关联IP
-sed -i 's/192.168.2.1/192.168.2.50/g' package/base-files/files/bin/config_generate
+sed -i 's/192.168.15.1/192.168.2.50/g' package/base-files/files/bin/config_generate
 #修改默认IP地址.1/g' package/base-files/files/bin/config_generate
 ##-----------------Add OpenClash dev core------------------
 curl -sL -m 30 --retry 2 https://github.com/vernesong/OpenClash/blob/core/master/meta/clash-linux-arm64.tar.gz -o /tmp/clash.tar.gz
