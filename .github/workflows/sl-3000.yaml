@@ -20,8 +20,8 @@ on:
     inputs:
       force-build:
         description: "Build new firmware anyway"
-        required: false
-        default: "false"
+        required: true,false
+        default: "true"
       ssh:
         description: "SSH connection to Actions"
         required: false
@@ -35,8 +35,8 @@ env:
   # You can modify the REPO_NAME to any name you want, but remember not to let it have the same name in 
   # other workflows.
   REPO_NAME: immortalwrt-mt798x
-  REPO_URL: https://github.com/sendlan/immortalwrt-24.10.git
-  REPO_BRANCH: openwrt-24.10
+  REPO_URL: https://github.com/x-wrt/x-wrt.git
+  REPO_BRANCH: master
   BUILD_DEPENDS:  "ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
   bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
   g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
