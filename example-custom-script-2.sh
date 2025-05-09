@@ -17,7 +17,7 @@
 #EOF
 #git apply example.patch
 #修改immortalwrt.lan关联IP
-sed -i 's/192.168.110.1/192.168.2.1/g' $(find feeds/luci/modules/luci-mod-system -type f -name "flash.js")
+sed -i 's/192.168.2.1/192.168.2.50/g' package/base-files/files/bin/config_generate
 #修改默认IP地址.1/g' package/base-files/files/bin/config_generate
 ##-----------------Add OpenClash dev core------------------
 curl -sL -m 30 --retry 2 https://github.com/vernesong/OpenClash/blob/core/master/meta/clash-linux-arm64.tar.gz -o /tmp/clash.tar.gz
@@ -26,17 +26,3 @@ chmod +x /tmp/clash >/dev/null 2>&1
 mkdir -p feeds/luci/applications/luci-app-openclash/root/etc/openclash/core
 mv /tmp/clash feeds/luci/applications/luci-app-openclash/root/etc/openclash/core/clash_meta >/dev/null 2>&1
 rm -rf /tmp/clash.tar.gz >/dev/null 2>&1
-##-----------------Fix Uboot-envtool-----------------
-sed -i 's/_$(SUBTARGET)/_filogic/g' package/boot/uboot-envtools/Makefile
-
-##-----------------Fix mtwifi-cfq 5g channel-----------------
-sed -i 's/channel="36"/channel="auto"/g' package/mtk/applications/mtwifi-cfg/files/mtwifi.sh
-
-##-----------------Add passwall-----------------
-mkdir -p package/atree
-git clone https://github.com/xiaorouji/openwrt-passwall-packages.git package/atree
-git clone https://github.com/xiaorouji/openwrt-passwall2.git package/atree/openwrt-passwall2
-
-##-----------------Fix libxcrypt error-----------------
- sed -i 's/PKG_INSTALL:=1/PKG_FORTIFY_SOURCE=0PKG_INSTALL:=1/g' feeds/packages/libs/libxcrypt/Makefile
- sed -e 's/PKG_FORTIFY_SOURCE=0PKG_INSTALL:=1/PKG_FORTIFY_SOURCE=0/' -e 's/PKG_INSTALL:=1/nPKG_INSTALL:=1/' feeds/packages/libs/libxcrypt/Makefile
