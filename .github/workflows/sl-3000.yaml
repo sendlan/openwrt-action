@@ -21,7 +21,7 @@ on:
       force-build:
         description: "Build new firmware anyway"
         required: false
-        default: "false"
+        default: "true"
       ssh:
         description: "SSH connection to Actions"
         required: false
@@ -34,17 +34,17 @@ env:
   # REPO means the OpenWrt repo you want to build from in this workflow. 
   # You can modify the REPO_NAME to any name you want, but remember not to let it have the same name in 
   # other workflows.
-  REPO_NAME: immortalwrt-mt798x
-  REPO_URL: https://github.com/zfgeng/immortalwrt-mt798x.git
-  REPO_BRANCH: dev
-  BUILD_DEPENDS:  "ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 \
-                   ccache clang cmake cpio curl device-tree-compiler fastjar file flex gawk gettext gcc-multilib \
-                   g++ g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev \
-                   libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev \
-                   libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full \
-                   patch pkgconf python2.7 python3 python3-distutils python3-pip libpython3-dev qemu-utils rsync \
-                   scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd \
-                   zlib1g-dev"
+  REPO_NAME: immortalwrt
+  REPO_URL: https://github.com/sendlan/immortalwrt.git
+  REPO_BRANCH: openwrt-24.10
+  BUILD_DEPENDS:  "ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+          bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
+          g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
+          libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev \
+          libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano \
+          ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils \
+          python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs \
+          upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd"
   # CONFIG_FILE is the name of your own config files for compiling, you should upload these files into the root 
   # directory of your workflow repo.
   CONFIG_FILE: sl-3000.config
@@ -126,6 +126,7 @@ jobs:
           sudo -E apt-get -qq autoremove --purge
           sudo -E apt-get -qq clean
           sudo timedatectl set-timezone $TIME_ZONE
+          sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
           sudo mkdir -p /workdir/
           sudo chown $USER:$GROUPS /workdir/
 
@@ -159,11 +160,6 @@ jobs:
           cd openwrt/
           $GITHUB_WORKSPACE/$CUSTOM_SCRIPT_2
 
-      - name: Mod wifi Txpower and Fix wireless mac
-        run: |
-          cd openwrt
-          cp $GITHUB_WORKSPACE/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
-
       - name: SSH connection to Actions
         uses: P3TERX/ssh2actions@main
         if: github.event.inputs.ssh == 'true' || contains(github.event.action, 'ssh')
@@ -185,7 +181,7 @@ jobs:
         run: |
           cd openwrt/
           echo -e "$(nproc) thread compile"
-          make -j$(nproc) || make -j1 || make -j1 V=s
+          make V=s -j$(nproc) || make -j6 V=s
           echo "status=success" >> $GITHUB_OUTPUT
           grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
           [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV

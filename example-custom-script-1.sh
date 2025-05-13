@@ -20,6 +20,11 @@
 #echo 'src-git-full luci https://git.openwrt.org/project/luci.git;openwrt-22.03' >> feeds.conf.default
 #echo 'src-git-full routing https://git.openwrt.org/feed/routing.git;openwrt-22.03' >> feeds.conf.default
 #echo 'src-git-full telephony https://git.openwrt.org/feed/telephony.git;openwrt-22.03' >> feeds.conf.default
+# istore support
+echo 'src-git nas https://github.com/linkease/nas-packages.git;master' >> feeds.conf.default
+echo 'src-git nas_luci https://github.com/linkease/nas-packages-luci.git;main' >> feeds.conf.default
+echo 'src-git store https://github.com/linkease/istore.git;main' >> feeds.conf.default
+echo 'src-git third https://github.com/jjm2473/openwrt-third.git;main' >> feeds.conf.default
 # # Replace a feed source with what you want:
 #sed '/feeds-name/'d feeds.conf.default
 #echo 'method feed-name path/URL' >> feeds.conf.default
