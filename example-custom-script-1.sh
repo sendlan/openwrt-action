@@ -21,10 +21,12 @@
 #echo 'src-git-full routing https://git.openwrt.org/feed/routing.git;openwrt-22.03' >> feeds.conf.default
 #echo 'src-git-full telephony https://git.openwrt.org/feed/telephony.git;openwrt-22.03' >> feeds.conf.default
 # istore support
-#echo 'src-git nas https://github.com/linkease/nas-packages.git;master' >> feeds.conf.default
-#echo 'src-git nas_luci https://github.com/linkease/nas-packages-luci.git;main' >> feeds.conf.default
-#echo 'src-git store https://github.com/linkease/istore.git;main' >> feeds.conf.default
-#echo 'src-git third https://github.com/jjm2473/openwrt-third.git;main' >> feeds.conf.default
+echo 'src-git nas https://github.com/linkease/nas-packages.git;master' >> feeds.conf.default
+echo 'src-git nas_luci https://github.com/linkease/nas-packages-luci.git;main' >> feeds.conf.default
+echo 'src-git store https://github.com/linkease/istore.git;main' >> feeds.conf.default
+echo 'src-git third https://github.com/jjm2473/openwrt-third.git;main' >> feeds.conf.default
+echo "src-git nikki https://github.com/nikkinikki-org/OpenWrt-nikki.git;main" >> "feeds.conf.default"
+echo "src-git podman https://github.com/breeze303/openwrt-podman.git;main" >> "feeds.conf.default"
 # # Replace a feed source with what you want:
 #sed '/feeds-name/'d feeds.conf.default
 #echo 'method feed-name path/URL' >> feeds.conf.default

@@ -13,7 +13,7 @@
 #-------------------------------------------------------------------------------------------------------
 
 # Workflow name which is showed in GitHub Actions.
-name: Build openwrt-firmware for sl-3000
+name: Build openwrt-firmware for AX1800PRO
 
 on:
   workflow_dispatch:
@@ -36,7 +36,7 @@ env:
   # other workflows.
   REPO_NAME: immortalwrt
   REPO_URL: https://github.com/LiBwrt/openwrt-6.x.git
-  REPO_BRANCH: openwrt-24.10
+  REPO_BRANCH: k6.12-nss
   BUILD_DEPENDS:  "ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
 bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib \
 git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev \
@@ -67,7 +67,7 @@ rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wg
 jobs:
   check:
     name: Check for source code updates
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     outputs:
       cache-hit: ${{ steps.cache-hash.outputs.cache-hit }}
 
@@ -93,7 +93,7 @@ jobs:
 
   build:
     name: Build firmware
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     needs: check
     permissions:
       contents: write
@@ -139,6 +139,7 @@ jobs:
         run: |
           chmod +x $CUSTOM_SCRIPT_1
           cd openwrt/
+          $GITHUB_WORKSPACE/$CUSTOM_SCRIPT_1
           cp $GITHUB_WORKSPACE/files/openwrt.diff openwrt.diff
           git apply openwrt.diff
 
@@ -151,7 +152,7 @@ jobs:
       - name: Load custom configuration
         run: |
           [ -e files ] && mv files/feeds.conf.default openwrt/feeds.conf.default
-          [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+
  
       - name: Run custom-script-2
         run: |
@@ -254,7 +255,7 @@ jobs:
 
   clean:
     name: Clean up old assets
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     permissions:
       actions: write
       contents: write
