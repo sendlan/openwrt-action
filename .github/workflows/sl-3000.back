@@ -1,4 +1,19 @@
-name: "SL-3000 路由器固件云编译平台"
+#
+# Copyright (c) 2022-2023 Curious <https://www.curious.host>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+# 
+# https://github.com/Curious-r/OpenWrtBuildWorkflows
+# Description: Automatically check OpenWrt source code update and build it. No additional keys are 
+# required.
+#
+# Some features come from https://github.com/P3TERX/Actions-OpenWrt, visit the repository to get its 
+# copyright information.
+#-------------------------------------------------------------------------------------------------------
+
+# Workflow name which is showed in GitHub Actions.
+name: Build openwrt-firmware for sl-3000
 
 on:
   workflow_dispatch:
@@ -7,51 +22,67 @@ on:
         description: "Build new firmware anyway"
         required: false
         default: "true"
-  schedule:
-    - cron: 0 */18 * * *
+# Uncomment the following to run regularly. Note that the cron expression here does not contain seconds.
+#  schedule:
+#    - cron: 0 */18 * * *
 
 env:
-  REPO_NAME: "immortalwrt"
-  REPO_URL: "https://github.com/padavanonly/immortalwrt-mt798x-6.6.git"
-  REPO_BRANCH: "openwrt-24.10-6.6"
-  CONFIG_FILE: "sl-3000.config"
-  CUSTOM_SCRIPT_1: "example-custom-script-1.sh"
-  CUSTOM_SCRIPT_2: "example-custom-script-2.sh"
+  # REPO means the OpenWrt repo you want to build from in this workflow. 
+  # You can modify the REPO_NAME to any name you want, but remember not to let it have the same name in 
+  # other workflows.
+  REPO_NAME: immortalwrt
+  REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6.git
+  REPO_BRANCH: openwrt-24.10-6.6
+  # CONFIG_FILE is the name of your own config files for compiling, you should upload these files into the root 
+  # directory of your workflow repo.
+  CONFIG_FILE: sl-3000.config
+  # CUSTOM_SCRIPT_1 is the name of extra bash script you want to execute before feeds update&install.
+  # CUSTOM_SCRIPT_2 is the name of extra bash script you want to execute after feeds update&install.
+  # You can modify the initial settings of your firmware through these two scripts. If this is what you need,
+  # please upload your scripts to the root directory of your workflow repo.
+  CUSTOM_SCRIPT_1: example-custom-script-1.sh
+  CUSTOM_SCRIPT_2: example-custom-script-2.sh
+  # STORE_PRODUCTS determine whether to upload all compilation products to workflow artifacts.
+  # Not only firmwires, all compiled packages will be here, including compiled but not solidified into firmware.
   STORE_PRODUCTS: false
+  # STORE_FIRMWARE determine whether to upload firmwares to workflow artifacts.
   STORE_FIRMWARE: true
+  # The following are options of where the firmware needs to be transfered. 
+  COWTRANSFER_FIRMWARE: false
   WETRANSFER_FIRMWARE: false
   RELEASE_FIRMWARE: false
-  TIME_ZONE: "Asia/Shanghai"
+  # Change the following to your time zone.
+  TIME_ZONE: Asia/Shanghai
 
 jobs:
   check:
-    name: "源码更新检查"
+    name: Check for source code updates
     runs-on: ubuntu-latest
     outputs:
       cache-hit: ${{ steps.cache-hash.outputs.cache-hit }}
 
     steps:
-      - name: "获取最新提交哈希"
+      - name: Get Commit Hash
         id: get-hash
         run: |
           git clone --depth 1 --branch $REPO_BRANCH --single-branch $REPO_URL ./
           echo "commit-hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-      - name: "校验哈希缓存状态"
+      - name: Compare Commit Hash
         id: cache-hash
         uses: actions/cache@main
         with:
           path: .${{ env.REPO_NAME }}-${{ env.REPO_BRANCH }}-commit-hash
           key: HEAD-${{ steps.get-hash.outputs.commit-hash }}
 
-      - name: "保存新版本哈希值"
+      - name: Save New Commit Hash
         if: steps.cache-hash.outputs.cache-hit != 'true'
         run: |
           echo ${{ steps.get-hash.outputs.commit-hash }} | 
             tee .$REPO_NAME-$REPO_BRANCH-commit-hash
 
   build:
-    name: "固件编译任务"
+    name: Build firmware
     runs-on: ubuntu-latest
     needs: check
     permissions:
@@ -59,10 +90,10 @@ jobs:
     if: needs.check.outputs.cache-hit != 'true' || github.event.inputs.force-build == 'true'
 
     steps:
-      - name: "代码仓库检出"
+      - name: Checkout
         uses: actions/checkout@main
 
-      - name: "清理磁盘空间"
+      - name: Free disk space
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
@@ -73,7 +104,7 @@ jobs:
           docker-images: true
           swap-storage: false
 
-      - name: "初始化构建环境"
+      - name: Initialization environment
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
@@ -88,40 +119,41 @@ jobs:
           sudo -E systemctl daemon-reload
           sudo -E timedatectl set-timezone "Asia/Shanghai"
 
-          sudo mkdir -p workdir/
-          sudo chown $USER:$GROUPS workdir/
+          sudo mkdir -p /workdir/
+          sudo chown $USER:$GROUPS /workdir/
 
-      - name: "克隆源码仓库"
-        working-directory: workdir
+      - name: Clone source code
+        working-directory: /workdir
         run: |
           df -hT $PWD
           git clone --depth 1 --branch $REPO_BRANCH --single-branch $REPO_URL openwrt/
-          ln -sf ./workdir/openwrt $GITHUB_WORKSPACE/openwrt
+          ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
-      - name: "执行自定义预处理脚本"
+      - name: Run custom-script-1
         run: |
           chmod +x $CUSTOM_SCRIPT_1
           cd openwrt/
           $GITHUB_WORKSPACE/$CUSTOM_SCRIPT_1
 
-      - name: "更新软件源数据"
+
+      - name: Update feeds
         run: cd openwrt/ && ./scripts/feeds update -a
 
-      - name: "安装软件依赖"
+      - name: Install feeds
         run: cd openwrt/ && ./scripts/feeds install -a
 
-      - name: "加载自定义配置"
+      - name: Load custom configuration
         run: |
           [ -e files ] && mv files/ openwrt/files/
           [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
  
-      - name: "执行自定义后处理脚本"
+      - name: Run custom-script-2
         run: |
           chmod +x $CUSTOM_SCRIPT_2
           cd openwrt/
           $GITHUB_WORKSPACE/$CUSTOM_SCRIPT_2
 
-      - name: "下载依赖软件包"
+      - name: Download packages
         id: download-packages
         run: |
           cd openwrt/
@@ -130,7 +162,7 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
 
-      - name: "编译固件主流程"
+      - name: Compile the firmware
         id: compile
         run: |
           cd openwrt/
@@ -141,18 +173,18 @@ jobs:
           [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
           echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
-      - name: "存储空间使用检查"
+      - name: Check space usage
         if: (!cancelled())
         run: df -hT
 
-      - name: "上传编译产物"
+      - name: Upload all compilation products
         uses: actions/upload-artifact@main
         if: steps.compile.outputs.status == 'success' && env.STORE_PRODUCTS == 'true'
         with:
           name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
           path: openwrt/bin/
 
-      - name: "整理固件文件"
+      - name: Organize firmware-related files
         id: organize-files
         run: |
           cd openwrt/bin/targets/*/*
@@ -160,14 +192,23 @@ jobs:
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: "上传固件文件包"
+      - name: Upload firmware directory
         uses: actions/upload-artifact@main
         if: steps.organize-files.outputs.status == 'success' && env.STORE_FIRMWARE == 'true' && !cancelled()
         with:
           name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
           path: ${{ env.FIRMWARE }}
 
-      - name: "通过WeTransfer传输固件"
+      - name: Upload firmware to cowtransfer
+        id: cowtransfer
+        if: steps.organize-files.outputs.status == 'success' && env.COWTRANSFER_FIRMWARE == 'true' && !cancelled()
+        run: |
+          curl -fsSL git.io/file-transfer | sh
+          ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
+          echo "::notice file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
+          echo "url=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
+
+      - name: Upload firmware to WeTransfer
         id: wetransfer
         if: steps.organize-files.outputs.status == 'success' && env.WETRANSFER_FIRMWARE == 'true' && !cancelled()
         run: |
@@ -176,18 +217,21 @@ jobs:
           echo "::notice file=wetransfer.com::$(cat wetransfer.log | grep https)"
           echo "url=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
 
-      - name: "创建发布标签"
+      - name: Generate release tag
         id: tag
         if: env.RELEASE_FIRMWARE == 'true' && !cancelled()
         run: |
           echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
           touch release.txt
           echo "Build from $REPO_URL $REPO_BRANCH" >> release.txt
+          [ $COWTRANSFER_FIRMWARE = true -o $WETRANSFER_FIRMWARE = true ] && echo 'Products transfer:' >> release.txt
+          [ $COWTRANSFER_FIRMWARE = true ] && echo \
+            "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
           [ $WETRANSFER_FIRMWARE = true ] && echo \
             "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
           echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: "发布固件到GitHub"
+      - name: Upload firmware to release
         uses: softprops/action-gh-release@master
         if: steps.tag.outputs.status == 'success' && !cancelled()
         with:
@@ -196,20 +240,20 @@ jobs:
           files: ${{ env.FIRMWARE }}/*
 
   clean:
-    name: "清理旧版本资产"
+    name: Clean up old assets
     runs-on: ubuntu-latest
     permissions:
       actions: write
       contents: write
 
     steps:
-      - name: "清理历史工作流记录"
+      - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@main
         with:
           retain_days: 1
           keep_minimum_runs: 1
 
-      - name: "删除旧版本发布"
+      - name: Remove old Releases
         uses: dev-drprasad/delete-older-releases@master
         if: env.RELEASE_FIRMWARE == 'true' && !cancelled()
         with:
